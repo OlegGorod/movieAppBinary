@@ -1,5 +1,7 @@
 # JS for everyone
 
+API_KEY 'api_key=04c35731a5ee918f014970082a0088b1'
+
 ## 🏃‍♂️ Simple start
 
 1. **`npm install`** at the root
