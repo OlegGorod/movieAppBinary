@@ -11,15 +11,82 @@ export async function render(): Promise<void> {
     const PAGINAPI = 'https://api.themoviedb.org/3/movie/popular?' + APIKEY + '&page=';
 
     const btnTrigger = document.querySelector('#button-wrapper') as HTMLDivElement;
-    const movie = document.querySelectorAll('.col-lg-3') as NodeListOf<HTMLDivElement>;
+    const movie = document.querySelectorAll('.card.shadow-sm') as NodeListOf<HTMLDivElement>;
+
     const form = document.querySelector('form') as HTMLFormElement;
     const searchInput = document.querySelector("#search") as HTMLInputElement;
     const submitButton = document.querySelector("#submit") as HTMLButtonElement;
     const paginationBtn = document.querySelector('#load-more');
     const releaseInfo = document.querySelectorAll('.text-muted');
     const description = document.querySelectorAll('.card-text');
+    const favoriteBtn = Array.from(document.querySelectorAll('.bi-heart-fill')) as SVGSVGElement[];
+    const favoriteModal = document.querySelector('#favorite-movies') as HTMLDivElement;
+
+
+
 
     let numberOfPage = 1;
+
+    addFavorite();
+    
+
+
+    function addFavorite() {
+        let favorMovies: string[] = [];
+        document.querySelector('.col-12.p-2')!.innerHTML = '';
+
+        favoriteBtn.forEach(item => {
+            item.setAttribute('fill', '#ff000078')
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', () => {
+                const cardElement = item.closest('.card.shadow-sm') as HTMLDivElement;
+                const clonedCardElement = cardElement.cloneNode(true) as HTMLDivElement;
+                const cardId: string = cardElement!.getAttribute('id') as string;
+                clonedCardElement.id = `cloned-card-${cardId}`;
+                console.log(clonedCardElement.children[1]);
+
+                if (item.getAttribute('fill') == 'red') {
+                    removeMovie(cardId, clonedCardElement);
+                    item.setAttribute('fill', '#ff000078');
+                    clonedCardElement.children[1].setAttribute('fill', '#ff000078');
+                } else {
+                    addMovie(cardId);
+                    item.setAttribute('fill', 'red');
+                    clonedCardElement.children[1].setAttribute('fill', 'red');
+                    favoriteModal.firstElementChild?.appendChild(clonedCardElement);
+                    clonedCardElement.addEventListener('click', () => {
+                        removeMovie(cardId, clonedCardElement);
+                        item.setAttribute('fill', '#ff000078');
+                    });
+                }
+
+                function addMovie(movieId: string) {
+                    if (!favorMovies.includes(movieId)) {
+                        favorMovies.push(movieId);
+                        localStorage.setItem('favorMovies',JSON.stringify(favorMovies));
+                        localStorage.setItem(clonedCardElement.id, clonedCardElement.outerHTML);
+                    }
+                }
+
+                function removeMovie(movieId: string, clonedCardElement: HTMLElement) {
+                    const index = favorMovies.indexOf(movieId)
+                    if (index !== -1) {
+                        favorMovies.splice(index, 1);
+                        localStorage.setItem('favormovies',JSON.stringify(favorMovies))
+                        const clonedCardElement = document.querySelector(`#cloned-card-${movieId}`)
+                        if (clonedCardElement) {
+                            clonedCardElement.remove();
+                            localStorage.removeItem(clonedCardElement.id)
+                        }
+                    }
+                }
+
+
+            });
+        });
+    }
+
+
 
 
 
@@ -48,29 +115,30 @@ export async function render(): Promise<void> {
         release_date: string;
         overview: string;
         title: string;
+        id: number;
     }
 
-    
+
 
 
     const showMovie = (data: MovieData) => {
         let filteredPoster: MovieObject[] = [];
         filteredPoster = data.results.filter((item: MovieObject) => item.poster_path);
-       
         generateRandomPoster(filteredPoster);
         for (let i = 0; i < movie.length; i++) {
-            movie[i].children[0]?.firstElementChild?.setAttribute('src', IMGPATH + filteredPoster[i].poster_path);
+            movie[i].setAttribute('id', filteredPoster[i].id.toString())
+            movie[i].firstElementChild?.setAttribute('src', IMGPATH + filteredPoster[i].poster_path);
             releaseInfo[i].textContent = filteredPoster[i].release_date;
             description[i].textContent = filteredPoster[i].overview;
         }
-        
+
     };
 
     function generateRandomPoster(arrayOfMovies: MovieObject[]) {
         const randomTitle = document.querySelector('#random-movie-name') as HTMLDivElement;
         const sectionRandom = document.querySelector('#random-movie') as HTMLDivElement;
         const randomDescr = document.querySelector('#random-movie-description') as HTMLDivElement;
-        let randomIdx: number = Math.floor(Math.random()*arrayOfMovies.length);
+        let randomIdx: number = Math.floor(Math.random() * arrayOfMovies.length);
 
         sectionRandom.style.background = `url(${IMGHIGHPATH + arrayOfMovies[randomIdx].poster_path}) 0 -230px/cover no-repeat`;
         randomDescr.textContent = `${arrayOfMovies[randomIdx].overview}`;
@@ -107,7 +175,7 @@ export async function render(): Promise<void> {
     paginationBtn?.addEventListener('click', () => {
         numberOfPage++;
         getMovies(PAGINAPI + numberOfPage);
-        document.documentElement.scrollTop = 700;
+        document.documentElement.scrollTop = 400;
 
     });
 }
